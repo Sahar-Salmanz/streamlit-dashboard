@@ -1,7 +1,17 @@
+import os
+import sys
+import numpy as np
 import streamlit as st
-from io import StringIO
 import json
+import matplotlib.pyplot as plt
+import seaborn as sns
 
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
+from django.core.wsgi import get_wsgi_application
+application = get_wsgi_application()
+from db.models import Message
+
+# Login
 login_option = st.sidebar.radio('Login/SignUp', ('Login', 'SignUp'))
 if login_option == 'Login':
     with st.sidebar.form("Login"):
@@ -26,27 +36,32 @@ else:
         if submitted:
             pass
 
-#st.logo('./streamlit_banner.webp', size='large')
-st.image('./streamlit_logo.png')
+# Banner
+st.image('Data/streamlit_logo.png')
 st.title(':chart_with_upwards_trend: Streamlit Dashboard Project')
 
-# with st.expander('Statistics'):
-#     uploaded_file = st.file_uploader("Choose a file")
-#     if uploaded_file is not None:
+# Questions
+with st.expander('Q / A'):
+    query = st.text_input('Search:')
 
-#         # To convert to a string based IO:
-#         stringio = StringIO(uploaded_file.getvalue().decode("utf-8"))
-#         #st.write(stringio)
+    # select top 10 from messages
+    for msg in Message.objects.all().order_by('-date'):
+        if not msg.text or msg.text[-1] not in '؟?':
+            continue
 
-#         # To read file as string:
-#         string_data = stringio.read()
-#         st.write(string_data)
+        if query and query not in msg.text:
+            continue
 
-#         data = json.loads(string_data)
-#         st.json(data)
+        col1, col2 = st.columns([1, 4])
+        col1.write(f'**{msg.user.username}**')
+        col2.write(msg.text.replace(query, f'**{query}**'))
 
-with st.expander('User Info.'):
     col1, col2 = st.columns(2)
-    col1.text_input('Name:')
-    col2.text_input('Location:')
-    st.camera_input('Camera Input', key='camera_input')
+    col1.button('< Previous')
+    col2.button('Next >')
+
+# with st.expander('User Info.'):
+#     col1, col2 = st.columns(2)
+#     col1.text_input('Name:')
+#     col2.text_input('Location:')
+#     st.camera_input('Camera Input', key='camera_input')
