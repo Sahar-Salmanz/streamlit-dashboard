@@ -1,5 +1,6 @@
 import os
 import json
+import re
 
 if __name__ == '__main__':
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
@@ -8,7 +9,7 @@ if __name__ == '__main__':
 
     from db.models import BannedWord, Message, User
 
-    with open('Data/result.json', 'r') as f:
+    with open('Data/gp_chat.json', 'r') as f:
         data = json.load(f)
 
     # Drop previous data
@@ -22,10 +23,30 @@ if __name__ == '__main__':
         if message['type'] != 'message':
             continue
 
+            # --- Fix from_id parsing ---
+        raw_id = message.get('from_id', '')
+
+        # Extract digits only
+        digits = re.sub(r'\D', '', raw_id)
+
+        if not digits:
+            # skip if no valid numeric id
+            continue
+
+        user_id = int(digits)
+
+        # --- Username fallback ---
+        username = message.get('from', 'Unknown')
+
         user, _ = User.objects.get_or_create(
-            id=int(message['from_id'].replace('user', '')),
-            username=message['from'],
+            id=user_id,
+            defaults={"username": username},
         )
+
+        # user, _ = User.objects.get_or_create(
+        #     id=int(message['from_id'].replace('user', ''))
+        #     username=message['from'],
+        # )
 
         plain_text = message['text']
         if type(message['text']) != str:
